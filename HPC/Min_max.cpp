@@ -1,63 +1,41 @@
-// To compile and run:
-// g++ -fopenmp min_max.cpp -o min_max
-// ./min_max 50 20
-
 #include <bits/stdc++.h>
 #include <omp.h>
- // for std::copy
 
 using namespace std;
 
-// Sequential Average
 void s_avg(int arr[], int n) {
-    long sum = 0L;
-    for (int i = 0; i < n; i++) {
-        sum += arr[i];
-    }
-    cout << "Average = " << sum / long(n) << endl;
+    long sum = accumulate(arr, arr + n, 0L);
+    cout << "Average: " << sum / long(n) << "\n";
 }
 
-// Parallel Average
 void p_avg(int arr[], int n) {
     long sum = 0L;
     #pragma omp parallel for reduction(+ : sum) num_threads(16)
     for (int i = 0; i < n; i++) {
         sum += arr[i];
     }
-    cout << "Average = " << sum / long(n) << endl;
+    cout << "Average: " << sum / long(n) << "\n";
 }
 
-// Sequential Sum
 void s_sum(int arr[], int n) {
-    long sum = 0L;
-    for (int i = 0; i < n; i++) {
-        sum += arr[i];
-    }
-    cout << "Sum = " << sum << endl;
+    long sum = accumulate(arr, arr + n, 0L);
+    cout << "Sum: " << sum << "\n";
 }
 
-// Parallel Sum
 void p_sum(int arr[], int n) {
     long sum = 0L;
     #pragma omp parallel for reduction(+ : sum) num_threads(16)
     for (int i = 0; i < n; i++) {
         sum += arr[i];
     }
-    cout << "Sum = " << sum << endl;
+    cout << "Sum: " << sum << "\n";
 }
 
-// Sequential Max
 void s_max(int arr[], int n) {
-    int max_val = INT_MIN;
-    for (int i = 0; i < n; i++) {
-        if (arr[i] > max_val) {
-            max_val = arr[i];
-        }
-    }
-    cout << "Max = " << max_val << endl;
+    int max_val = *max_element(arr, arr + n);
+    cout << "Max: " << max_val << "\n";
 }
 
-// Parallel Max
 void p_max(int arr[], int n) {
     int max_val = INT_MIN;
     #pragma omp parallel for reduction(max : max_val) num_threads(16)
@@ -66,21 +44,14 @@ void p_max(int arr[], int n) {
             max_val = arr[i];
         }
     }
-    cout << "Max = " << max_val << endl;
+    cout << "Max: " << max_val << "\n";
 }
 
-// Sequential Min
 void s_min(int arr[], int n) {
-    int min_val = INT_MAX;
-    for (int i = 0; i < n; i++) {
-        if (arr[i] < min_val) {
-            min_val = arr[i];
-        }
-    }
-    cout << "Min = " << min_val << endl;
+    int min_val = *min_element(arr, arr + n);
+    cout << "Min: " << min_val << "\n";
 }
 
-// Parallel Min
 void p_min(int arr[], int n) {
     int min_val = INT_MAX;
     #pragma omp parallel for reduction(min : min_val) num_threads(16)
@@ -89,69 +60,80 @@ void p_min(int arr[], int n) {
             min_val = arr[i];
         }
     }
-    cout << "Min = " << min_val << endl;
+    cout << "Min: " << min_val << "\n";
 }
 
-// Benchmark execution time
-string bench_traverse(function<void()> traverse_fn) {
-    auto start = chrono::high_resolution_clock::now();
-    traverse_fn();
-    auto stop = chrono::high_resolution_clock::now();
-    auto duration = chrono::duration_cast<chrono::milliseconds>(stop - start);
-    return to_string(duration.count());
-}
-
-// Main function
-int main(int argc, const char **argv) {
+int main() {
     int n, rand_max;
 
-    // Command-line argument parsing
-    if (argc < 3) {
-        cout << "Enter array length: ";
-        cin >> n;
-        cout << "Enter maximum random value: ";
-        cin >> rand_max;
-    } else {
-        n = stoi(argv[1]);
-        rand_max = stoi(argv[2]);
-    }
+    // Prompt user for input
+    cout << "Enter array length: ";
+    cin >> n;
+    cout << "Enter maximum random value: ";
+    cin >> rand_max;
 
-    // Allocate and fill array
-    int* a = new int[n];
+    // Allocate and initialize array with random values
+    vector<int> a(n);
     for (int i = 0; i < n; i++) {
         a[i] = rand() % rand_max;
     }
 
-    // Display generated array (first 20 elements only for readability)
-    cout << "\nGenerated array (first 20 elements):\n";
-    for (int i = 0; i < min(n, 20); i++) {
-        cout << a[i] << "\t";
-    }
-    cout << "\n\n";
+    vector<int> b = a;  // Copy array a to b
 
-    // Create a copy for other operations
-    int* b = new int[n];
-    copy(a, a + n, b);
+    cout << "Generated random array of length " << n << " with elements between 0 to " << rand_max << "\n\n";
 
-    cout << "Generated random array of length " << n 
-         << " with elements between 0 and " << rand_max << "\n\n";
+    // Sequential and parallel function calls with formatted output
+    auto start = chrono::high_resolution_clock::now();
+    cout << "Sequential Min: ";
+    s_min(a.data(), n);
+    auto stop = chrono::high_resolution_clock::now();
+    cout << "Execution time: " << chrono::duration_cast<chrono::milliseconds>(stop - start).count() << " ms\n";
+    
+    start = chrono::high_resolution_clock::now();
+    cout << "Parallel (16) Min: ";
+    p_min(a.data(), n);
+    stop = chrono::high_resolution_clock::now();
+    cout << "Execution time: " << chrono::duration_cast<chrono::milliseconds>(stop - start).count() << " ms\n";
+    cout << "=============================\n";
 
-    // Perform and benchmark operations
-    cout << "Sequential Min: " << bench_traverse([&] { s_min(a, n); }) << " ms\n";
-    cout << "Parallel (16 threads) Min: " << bench_traverse([&] { p_min(a, n); }) << " ms\n\n";
+    start = chrono::high_resolution_clock::now();
+    cout << "Sequential Max: ";
+    s_max(a.data(), n);
+    stop = chrono::high_resolution_clock::now();
+    cout << "Execution time: " << chrono::duration_cast<chrono::milliseconds>(stop - start).count() << " ms\n";
+    
+    start = chrono::high_resolution_clock::now();
+    cout << "Parallel (16) Max: ";
+    p_max(a.data(), n);
+    stop = chrono::high_resolution_clock::now();
+    cout << "Execution time: " << chrono::duration_cast<chrono::milliseconds>(stop - start).count() << " ms\n";
+    cout << "=============================\n";
 
-    cout << "Sequential Max: " << bench_traverse([&] { s_max(a, n); }) << " ms\n";
-    cout << "Parallel (16 threads) Max: " << bench_traverse([&] { p_max(a, n); }) << " ms\n\n";
+    start = chrono::high_resolution_clock::now();
+    cout << "Sequential Sum: ";
+    s_sum(a.data(), n);
+    stop = chrono::high_resolution_clock::now();
+    cout << "Execution time: " << chrono::duration_cast<chrono::milliseconds>(stop - start).count() << " ms\n";
+    
+    start = chrono::high_resolution_clock::now();
+    cout << "Parallel (16) Sum: ";
+    p_sum(a.data(), n);
+    stop = chrono::high_resolution_clock::now();
+    cout << "Execution time: " << chrono::duration_cast<chrono::milliseconds>(stop - start).count() << " ms\n";
+    cout << "=============================\n";
 
-    cout << "Sequential Sum: " << bench_traverse([&] { s_sum(a, n); }) << " ms\n";
-    cout << "Parallel (16 threads) Sum: " << bench_traverse([&] { p_sum(a, n); }) << " ms\n\n";
-
-    cout << "Sequential Average: " << bench_traverse([&] { s_avg(a, n); }) << " ms\n";
-    cout << "Parallel (16 threads) Average: " << bench_traverse([&] { p_avg(a, n); }) << " ms\n";
-
-    // Free memory
-    delete[] a;
-    delete[] b;
+    start = chrono::high_resolution_clock::now();
+    cout << "Sequential Average: ";
+    s_avg(a.data(), n);
+    stop = chrono::high_resolution_clock::now();
+    cout << "Execution time: " << chrono::duration_cast<chrono::milliseconds>(stop - start).count() << " ms\n";
+    
+    start = chrono::high_resolution_clock::now();
+    cout << "Parallel (16) Average: ";
+    p_avg(a.data(), n);
+    stop = chrono::high_resolution_clock::now();
+    cout << "Execution time: " << chrono::duration_cast<chrono::milliseconds>(stop - start).count() << " ms\n";
+    cout << "=============================\n";
 
     return 0;
 }
